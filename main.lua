@@ -1,5 +1,6 @@
 local socket = require("socket")
 local sqlite3 = require("lsqlite3")
+local bcrypt = require("bcrypt")
 
 -- Handling the save process
 local db = sqlite3.open("mud.db")
@@ -8,27 +9,35 @@ db:exec([[
 	CREATE TABLE IF NOT EXISTS players (
 		id INTEGER PRIMARY KEY NOT NULL,
 		username TEXT UNIQUE,
+		password_hash TEXT,
 		current_room INTEGER
 	);
 ]])
 
 local function savePlayerProgress(username, currentRoom)
-	local stmt = db:prepare("INSERT OR REPLACE INTO players (username, current_room) VALUES (?, ?)")
+	local stmt = db:prepare("REPLACE INTO players (username, current_room) VALUES (?, ?)")
 	stmt:bind_values(username, currentRoom)
 	stmt:step()
 	stmt:finalize()
 end
 
-local function getPlayerProgress(username)
-	local stmt = db:prepare("SELECT current_room FROM players WHERE username = ?")
+local function getPlayerProgress(username, fields)
+	if not fields then
+		fields = { "current_room" }
+	end
+
+	local fieldList = table.concat(fields, ", ")
+	local stmt = db:prepare("SELECT	" .. fieldList .. " FROM players WHERE username = ?")
 	stmt:bind_values(username)
 
-	local currentRoom = nil
+	local result = {}
 	if stmt:step() == sqlite3.ROW then
-		currentRoom = stmt:get_value(0)
+		for i, field in ipairs(fields) do
+			result[field] = stmt:get_value(i - 1)
+		end
 	end
 	stmt:finalize()
-	return currentRoom
+	return result
 end
 
 -- handling the game logic
@@ -44,15 +53,22 @@ local function send(client, message)
 	client:send(message .. "\n")
 end
 
-local function login(username)
+local function login(username, password)
+	local passwordHash = bcrypt.digest(password, 12)
+	local db_hash = getPlayerProgress()
+
 	local currentRoom = getPlayerProgress(username)
 	return currentRoom
 end
 
-local function createAccount(username)
-	local usernameExists = getPlayerProgress(username)
-	if not usernameExists then
-		savePlayerProgress(username, 1)
+local function createAccount(username, password)
+	local Exists = getPlayerProgress(username)
+	if not Exists["current_room"] then
+		local passwordHash = bcrypt.digest(password, 12)
+		local stmt = db:prepare("INSERT INTO players (username, password_hash, current_room) VALUES (?, ?, ?)")
+		stmt:bind_values(username, passwordHash, 1)
+		stmt:step()
+		stmt:finalize()
 		return true
 	end
 	return false
@@ -74,7 +90,12 @@ local function handleClient(client)
 			if username == 0 then
 				choice = nil
 			end
-			currentRoom = login(username)
+
+			send(client, "Password:")
+			local password = client:receive()
+
+			currentRoom = login(username, password)["current_room"]
+
 			if not currentRoom then
 				send(client, "User " .. username .. " does not exists.")
 				choice = nil
@@ -87,7 +108,9 @@ local function handleClient(client)
 			if username == 0 then
 				choice = nil
 			end
-			local success = createAccount(username)
+			send(client, "Password:")
+			local password = client:receive()
+			local success = createAccount(username, password)
 			if success then
 				send(client, "Created with success! Welcome, " .. username)
 				currentRoom = 1
