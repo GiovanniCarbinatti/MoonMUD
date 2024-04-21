@@ -1,9 +1,10 @@
 local socket = require("socket")
 local sqlite3 = require("lsqlite3")
-local bcrypt = require("bcrypt")
+local save = require("save")
+local login = require("login")
 
 -- Handling the save process
-local db = sqlite3.open("mud.db")
+_G.db = sqlite3.open("mud.db")
 
 db:exec([[
 	CREATE TABLE IF NOT EXISTS players (
@@ -13,32 +14,6 @@ db:exec([[
 		current_room INTEGER
 	);
 ]])
-
-local function savePlayerProgress(username, currentRoom)
-	local stmt = db:prepare("UPDATE players SET current_room = ? WHERE username = ?")
-	stmt:bind_values(currentRoom, username)
-	stmt:step()
-	stmt:finalize()
-end
-
-local function getPlayerProgress(username, fields)
-	if not fields then
-		fields = { "current_room" }
-	end
-
-	local fieldList = table.concat(fields, ", ")
-	local stmt = db:prepare("SELECT	" .. fieldList .. " FROM players WHERE username = ?")
-	stmt:bind_values(username)
-
-	local result = {}
-	if stmt:step() == sqlite3.ROW then
-		for i, field in ipairs(fields) do
-			result[field] = stmt:get_value(i - 1)
-		end
-	end
-	stmt:finalize()
-	return result
-end
 
 -- handling the game logic
 local host = "localhost"
@@ -51,28 +26,6 @@ local rooms = {
 
 local function send(client, message)
 	client:send(message .. "\n")
-end
-
-local function login(username, password)
-	local results = getPlayerProgress(username, { "password_hash", "current_room" })
-	if bcrypt.verify(password, results["password_hash"]) then
-		return results
-	else
-		return {}
-	end
-end
-
-local function createAccount(username, password)
-	local Exists = getPlayerProgress(username)
-	if not Exists["current_room"] then
-		local passwordHash = bcrypt.digest(password, 12)
-		local stmt = db:prepare("INSERT INTO players (username, password_hash, current_room) VALUES (?, ?, ?)")
-		stmt:bind_values(username, passwordHash, 1)
-		stmt:step()
-		stmt:finalize()
-		return true
-	end
-	return false
 end
 
 local function handleClient(client)
@@ -95,7 +48,7 @@ local function handleClient(client)
 			send(client, "Password:")
 			local password = client:receive()
 
-			currentRoom = login(username, password)["current_room"]
+			currentRoom = login.login(username, password)["current_room"]
 
 			if not currentRoom then
 				send(client, "User " .. username .. " does not exists.")
@@ -111,11 +64,11 @@ local function handleClient(client)
 			end
 			send(client, "Password:")
 			local password = client:receive()
-			local success = createAccount(username, password)
+			local success = login.createAccount(username, password)
 			if success then
 				send(client, "Created with success! Welcome, " .. username)
 				currentRoom = 1
-				savePlayerProgress(username, currentRoom)
+				save.savePlayerProgress(username, currentRoom)
 			else
 				send(client, "Username already exists. Choose another or login.")
 				choice = nil
@@ -150,7 +103,7 @@ local function handleClient(client)
 		end
 	end
 
-	savePlayerProgress(username, currentRoom)
+	save.savePlayerProgress(username, currentRoom)
 	client:close()
 end
 
