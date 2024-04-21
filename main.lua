@@ -15,8 +15,8 @@ db:exec([[
 ]])
 
 local function savePlayerProgress(username, currentRoom)
-	local stmt = db:prepare("REPLACE INTO players (username, current_room) VALUES (?, ?)")
-	stmt:bind_values(username, currentRoom)
+	local stmt = db:prepare("UPDATE players SET current_room = ? WHERE username = ?")
+	stmt:bind_values(currentRoom, username)
 	stmt:step()
 	stmt:finalize()
 end
@@ -54,11 +54,12 @@ local function send(client, message)
 end
 
 local function login(username, password)
-	local passwordHash = bcrypt.digest(password, 12)
-	local db_hash = getPlayerProgress()
-
-	local currentRoom = getPlayerProgress(username)
-	return currentRoom
+	local results = getPlayerProgress(username, { "password_hash", "current_room" })
+	if bcrypt.verify(password, results["password_hash"]) then
+		return results
+	else
+		return {}
+	end
 end
 
 local function createAccount(username, password)
