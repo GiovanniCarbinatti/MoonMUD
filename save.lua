@@ -2,7 +2,7 @@ local save = {}
 local sqlite3 = require("lsqlite3")
 
 function save.savePlayerProgress(username, currentRoom)
-	local stmt = db:prepare("UPDATE players SET current_room = ? WHERE username = ?")
+	local stmt = db:prepare("UPDATE credentials SET current_room = ? WHERE username = ?")
 	stmt:bind_values(currentRoom, username)
 	stmt:step()
 	stmt:finalize()
@@ -14,7 +14,7 @@ function save.getPlayerProgress(username, fields)
 	end
 
 	local fieldList = table.concat(fields, ", ")
-	local stmt = db:prepare("SELECT	" .. fieldList .. " FROM players WHERE username = ?")
+	local stmt = db:prepare("SELECT	" .. fieldList .. " FROM credentials WHERE username = ?")
 	stmt:bind_values(username)
 
 	local result = {}

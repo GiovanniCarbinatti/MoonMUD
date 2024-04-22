@@ -15,7 +15,7 @@ function login.createAccount(username, password)
 	local Exists = save.getPlayerProgress(username)
 	if not Exists["current_room"] then
 		local passwordHash = bcrypt.digest(password, 12)
-		local stmt = db:prepare("INSERT INTO players (username, password_hash, current_room) VALUES (?, ?, ?)")
+		local stmt = db:prepare("INSERT INTO credentials (username, password_hash, current_room) VALUES (?, ?, ?)")
 		stmt:bind_values(username, passwordHash, 1)
 		stmt:step()
 		stmt:finalize()
