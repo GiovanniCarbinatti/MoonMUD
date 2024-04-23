@@ -14,8 +14,9 @@ local host = "localhost"
 local port = 12345
 
 local rooms = {
-	{ name = "Room 1", description = "This is room 1", exits = { east = 2 } },
-	{ name = "Room 2", description = "This is room 2", exits = { west = 1 } },
+	{ name = "The Moon City", description = "Capital of the heroes", exits = { east = 2, north = 3 } },
+	{ name = "The Moon Cave", description = "Dungeon of the east", exits = { west = 1 } },
+	{ name = "The Moon Desert", description = "An endless dangerous desert", exits = { south = 1 } },
 }
 
 local function send(client, message)
@@ -74,11 +75,12 @@ local function handleClient(client)
 	end
 
 	while true do
-		send(client, rooms[currentRoom].description)
+		local area_msg = "You're in " .. rooms[currentRoom].name .. ", " .. rooms[currentRoom].description
+		send(client, area_msg)
 
 		local exitList = "Exits: "
 		for direction, room in pairs(rooms[currentRoom].exits) do
-			exitList = exitList .. direction .. " goes to room " .. room .. ", "
+			exitList = exitList .. direction .. " goes to " .. rooms[room].name .. ", "
 		end
 		exitList = exitList:sub(1, -3)
 		send(client, exitList)
