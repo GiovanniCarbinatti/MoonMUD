@@ -3,6 +3,7 @@ local sqlite3 = require("lsqlite3")
 local save = require("save")
 local login = require("login")
 local init = require("init")
+local rooms = require("rooms")
 
 -- Handling the save process
 _G.db = sqlite3.open("mud.db")
@@ -12,12 +13,6 @@ init:init_db()
 -- handling the game logic
 local host = "localhost"
 local port = 12345
-
-local rooms = {
-	{ name = "The Moon City", description = "Capital of the heroes", exits = { east = 2, north = 3 } },
-	{ name = "The Moon Cave", description = "Dungeon of the east", exits = { west = 1 } },
-	{ name = "The Moon Desert", description = "An endless dangerous desert", exits = { south = 1 } },
-}
 
 local function send(client, message)
 	client:send(message .. "\n")
