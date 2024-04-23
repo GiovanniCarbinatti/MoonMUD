@@ -4,6 +4,7 @@ local save = require("save")
 local login = require("login")
 local init = require("init")
 local rooms = require("rooms")
+local enemies = require("enemies")
 
 -- Handling the save process
 _G.db = sqlite3.open("mud.db")
