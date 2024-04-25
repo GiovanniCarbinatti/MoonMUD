@@ -5,16 +5,14 @@ local login = require("login")
 local init = require("init")
 local rooms = require("rooms")
 local enemies = require("enemies")
-
--- Handling the save process
-_G.db = sqlite3.open("mud.db")
-
-init:init_db()
-
--- handling the game logic
 local host = "localhost"
 local port = 12345
 
+-- Handling the save process
+_G.db = sqlite3.open("mud.db")
+init:init_db()
+
+-- handling the game logic
 local function send(client, message)
 	client:send(message .. "\n")
 end
@@ -32,37 +30,41 @@ local function handleClient(client)
 		if choice == "1" then
 			send(client, "Enter your username or 0 to return:")
 			username = client:receive()
-			if username == 0 then
+			if username == "0" then
 				choice = nil
 			end
 
-			send(client, "Password:")
-			local password = client:receive()
+			if choice then
+				send(client, "Password:")
+				local password = client:receive()
 
-			currentRoom = login.login(username, password)["current_room"]
+				currentRoom = login.login(username, password)["current_room"]
 
-			if not currentRoom then
-				send(client, "User " .. username .. " does not exists.")
-				choice = nil
-			else
-				send(client, "Sucess! Welcome back, " .. username .. "!")
+				if not currentRoom then
+					send(client, "User " .. username .. " does not exists.")
+					choice = nil
+				else
+					send(client, "Sucess! Welcome back, " .. username .. "!")
+				end
 			end
 		elseif choice == "2" then
 			send(client, "Enter your new username or 0 to return:")
 			username = client:receive()
-			if username == 0 then
+			if username == "0" then
 				choice = nil
 			end
-			send(client, "Password:")
-			local password = client:receive()
-			local success = login.createAccount(username, password)
-			if success then
-				send(client, "Created with success! Welcome, " .. username)
-				currentRoom = 1
-				save.savePlayerProgress(username, currentRoom)
-			else
-				send(client, "Username already exists. Choose another or login.")
-				choice = nil
+			if choice then
+				send(client, "Password:")
+				local password = client:receive()
+				local success = login.createAccount(username, password)
+				if success then
+					send(client, "Created with success! Welcome, " .. username)
+					currentRoom = 1
+					save.savePlayerProgress(username, currentRoom)
+				else
+					send(client, "Username already exists. Choose another or login.")
+					choice = nil
+				end
 			end
 		else
 			client:send("Invalid command.")
