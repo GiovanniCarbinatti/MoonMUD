@@ -1,5 +1,6 @@
 local socket = require("socket")
 local sqlite3 = require("lsqlite3")
+local color = require("ansicolors")
 local save = require("save")
 local login = require("login")
 local battle = require("battle")
