@@ -1,14 +1,15 @@
-local socket = require("socket")
+local socket  = require("socket")
 local sqlite3 = require("lsqlite3")
-local color = require("ansicolors")
-local save = require("save")
-local login = require("login")
-local battle = require("battle")
-local init = require("init")
-local rooms = require("rooms")
+local color   = require("ansicolors")
+local save    = require("save")
+local login   = require("login")
+local battle  = require("battle")
+local init    = require("init")
+local rooms   = require("rooms")
 local enemies = require("enemies")
-local host = "localhost"
-local port = 12345
+
+local host    = "localhost"
+local port    = 12345
 
 -- Handling the save process
 _G.db = sqlite3.open("mud.db")
@@ -21,8 +22,8 @@ end
 
 local function handleClient(client)
 	send(client, "Welcome to MoonMud")
-	local choice = nil
-	local username = nil
+	local choice      = nil
+	local username    = nil
 	local currentRoom = nil
 
 	while not choice do
@@ -32,9 +33,7 @@ local function handleClient(client)
 		if choice == "1" then
 			send(client, "Enter your username or 0 to return:")
 			username = client:receive()
-			if username == "0" then
-				choice = nil
-			end
+			if username == "0" then choice = nil end
 
 			if choice then
 				send(client, "Password:")
@@ -52,13 +51,13 @@ local function handleClient(client)
 		elseif choice == "2" then
 			send(client, "Enter your new username or 0 to return:")
 			username = client:receive()
-			if username == "0" then
-				choice = nil
-			end
+			
+			if username == "0" then choice = nil end
+			
 			if choice then
 				send(client, "Password:")
 				local password = client:receive()
-				local success = login.createAccount(username, password)
+				local success  = login.createAccount(username, password)
 				if success then
 					send(client, "Created with success! Welcome, " .. username)
 					currentRoom = 1
