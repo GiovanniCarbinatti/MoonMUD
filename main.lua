@@ -21,13 +21,13 @@ local function send(client, message)
 end
 
 local function handleClient(client)
-	send(client, "Welcome to MoonMud")
+	send(client, color("%{red}Welcome to MoonMud!"))
 	local choice      = nil
 	local username    = nil
 	local currentRoom = nil
 
 	while not choice do
-		send(client, "Choose between: 1 - login, 2 - create an account")
+		send(client, color("%{yellow}Choose between: 1 - login, 2 - create an account"))
 		choice = client:receive()
 
 		if choice == "1" then
@@ -75,7 +75,7 @@ local function handleClient(client)
 
 	while true do
 		local area_msg = "You're in " .. rooms[currentRoom].name .. ", " .. rooms[currentRoom].description
-		send(client, area_msg)
+		send(client, color("%{magenta}" .. area_msg))
 
 		local exitList = "Exits: "
 		for direction, room in pairs(rooms[currentRoom].exits) do
